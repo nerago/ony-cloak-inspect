@@ -3,36 +3,37 @@ local addon = select(2, ...)
 
 NERAGO_ONY_CHECK = addon;
 
-function addon:onEvent(event, ...)
+function addon:onEvent(_, event, ...)
 	local arg1, arg2 = select(1, ...), select(2, ...);
     if event == "ADDON_LOADED" then
         if arg1 == "NeragoCheckOnyCloak" then
             addon:infoMessage("Loaded");
 			SlashCmdList["NERAGO_ONY_CHECK"] = function(...) addon:slashCommand(...) end;
-			NERAGO_ONY_CHECK1 = "/ony";
+			SLASH_NERAGO_ONY_CHECK1 = "/ony";
+			if not NERAGO_ONY_CHECK_SAVED then
+				NERAGO_ONY_CHECK_SAVED = {};
+			end
 			addon.loaded = true;
 			addon.checking = false;
         end
-	elseif event == "GROUP_ROSTER_UPDATE" then
-		if addon.loaded then
+	elseif addon.loaded then
+		if event == "GROUP_ROSTER_UPDATE" then
 			--todo
-		end
-	elseif event == "PLAYER_TARGET_CHANGED" then
-		self:checkTarget();
-	elseif event == "INSPECT_READY" then
-		if addon.loaded then
+		elseif event == "PLAYER_TARGET_CHANGED" then
+			self:checkTarget();
+		elseif event == "INSPECT_READY" then
 			addon:inspectReady(arg1);
 		end
     end
 end
 
 function addon:slashCommand(...)
-	self:startCheck();
+	self:createFrame();
+	--self:startCheck();
 end
 
 function addon:startCheck()
 	local numMembers = GetNumGroupMembers(LE_PARTY_CATEGORY_HOME);
-	
 	self.status = {};
 	
 	if IsInRaid() then
@@ -42,7 +43,7 @@ function addon:startCheck()
 			local name, guid = UnitNameUnmodified(unitId), UnitGUID(unitId);
 			if name and guid then
 				-- GetPlayerInfoByGUID
-				self.status[guid] = { name = name };
+				self.status[guid] = { guid = guid, name = name };
 			end
 		end
 	elseif IsInGroup() then
@@ -50,12 +51,18 @@ function addon:startCheck()
 			local unitId = "party" .. i;
 			local name, guid = UnitNameUnmodified(unitId), UnitGUID(unitId);
 			if name and guid then
-				self.status[guid] = { name = name };
+				self.status[guid] = { guid = guid, name = name };
 			end
 		end
 	else
 		infoMessage("Not in group")
 	end
+	
+	self.dataProvider.RemoveIndexRange(1, self.dataProvider:GetSize());
+	for guid, tab in pairs(self.status) do
+		self.dataProvider:Insert(tab)
+	end
+	
 	
 	-- show UI
 end
@@ -75,61 +82,114 @@ function addon:inspectReady(inspecteeGUID)
 	print("cloak "..tostring(itemId));
 end
 
+local nameIndex = 0;
+
+function addon:initRow(frame, data)
+	if not frame.left then
+		local buttonName = "NeragoCheckOnyCloakCheckButton"..nameIndex;
+		nameIndex = nameIndex + 1
+		frame.button = CreateFrame("Button", buttonName, frame, "UIPanelButtonTemplate,InsecureActionButtonTemplate")
+		
+		frame.button:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
+		frame.button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
+		frame.button:SetText("Check")
+		frame.button:SetSize(50, 20)
+		
+		frame.left = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText")
+		frame.left:SetPoint("LEFT", frame)
+		frame.left:SetPoint("RIGHT", frame.button, "LEFT")
+		
+		--frame.right = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText")
+		--frame.right:SetPoint("RIGHT")
+	end
+	
+	frame.left:SetText(data.name)
+	frame.button:SetAttribute("type", "target")
+	frame.button:SetAttribute("target", data.name)
+	--frame.right:SetText("123")
+	--frame.right:Hide()
+	--frame.button:Show()
+	--frame:SetScript("OnMouseDown", function() self:pressPlayer(data) end)
+end
+
+function addon:pressPlayer(data)
+	
+end
+
 function addon:createFrame()
-	local frame = self.frame;
-	if not frame then
-		frame = CreateFrame("ScrollFrame", "NeragoCheckOnyFrame", UIParent)
-		frame:SetSize(200, 400);
+	local dialog = self.frame;
+	if not dialog then
+		dialog = CreateFrame("Frame", "NeragoCheckOnyFrame", UIParent, "BasicFrameTemplateWithInset");
+		dialog.TitleText:SetText("Check Onyixa Cloak")
+		dialog:SetSize(200, 400); -- todo saved size
 		
 		local saved = NERAGO_ONY_CHECK_SAVED;
 		if saved and saved.point ~= nil and saved.relativePoint ~= nil and saved.offsetX ~= nil and saved.offsetY ~= nil then
-			frame:SetPoint(saved.point, nil, saved.relativePoint, saved.offsetX, saved.offsetY);
+			dialog:SetPoint(saved.point, nil, saved.relativePoint, saved.offsetX, saved.offsetY);
 		else
-			frame:SetPoint("CENTER");
+			dialog:SetPoint("CENTER");
 		end
-				
 		
-		frame:SetScript("OnDragStart", function(_, button)
-			frame:StartMoving()
+		dialog:SetScript("OnDragStart", function(_, button)
+			dialog:StartMoving()
 		end)
-		frame:SetScript("OnDragStop", function()
-			frame:StopMovingOrSizing()
+		dialog:SetScript("OnDragStop", function()
+			dialog:StopMovingOrSizing()
 			
-			local point, relativeTo, relativePoint, offsetX, offsetY = frame:GetPoint();
-			NERAGO_ONY_CHECK_SAVED.point = point;
-			NERAGO_ONY_CHECK_SAVED.relativePoint = relativePoint;
-			NERAGO_ONY_CHECK_SAVED.offsetX = offsetX;
-			NERAGO_ONY_CHECK_SAVED.offsetY = offsetY;
+			local point, relativeTo, relativePoint, offsetX, offsetY = dialog:GetPoint();
+			saved.point = point;
+			saved.relativePoint = relativePoint;
+			saved.offsetX = offsetX;
+			saved.offsetY = offsetY;
 		end)
 		
-		local sizer = CreateFrame("Button", nil, frame);
+		local sizer = CreateFrame("Button", nil, dialog);
 		sizer:EnableMouse("true");
 		sizer:SetPoint("BOTTOMRIGHT");
-		sizer:SetSize(16, 16);
+		sizer:SetSize(24, 24);
 		sizer:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down");
 		sizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight");
 		sizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up");
 		sizer:SetScript("OnMouseDown", function(self)
-			frame:StartSizing("BOTTOMRIGHT") 
+			dialog:StartSizing("BOTTOMRIGHT") 
 		end)
 		sizer:SetScript("OnMouseUp", function()
-			frame:StopMovingOrSizing("BOTTOMRIGHT")
+			dialog:StopMovingOrSizing("BOTTOMRIGHT")
 		end)
 		
+		dialog:RegisterForDrag("LeftButton");
+		dialog:EnableMouse(true)
+		dialog:SetMovable(true);
+		dialog:SetResizable(true)
 		
-		frame:RegisterForDrag("LeftButton");
-		frame:EnableMouse(true)
-		frame:SetMovable(true);
-		frame:SetResizable(true)
+		local scrollBox = CreateFrame("Frame", nil, dialog, "WowScrollBoxList")
+		--scrollBox:SetAllPoints()
+		scrollBox:SetPoint("TOPLEFT", dialog.InsetBg, "TOPLEFT", 4, 0)
+		scrollBox:SetPoint("BOTTOMRIGHT", dialog.InsetBg, "BOTTOMRIGHT", -10, 0)
+
+		local scrollBar = CreateFrame("EventFrame", nil, dialog, "MinimalScrollBar")
+		scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
+		scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
 		
-		self.frame = frame;
+		local dataProvider = CreateDataProvider()
+		dataProvider:SetSortComparator(function(a, b) if a.name < b.name then return -1 elseif a.name > b.name then return 1 else return 0 end end);
+		local scrollView = CreateScrollBoxListLinearView()
+		scrollView:SetDataProvider(dataProvider)
+		scrollView:SetElementExtent(20)
+		scrollView:SetElementInitializer("Frame", function(a, b) self:initRow(a, b) end)
+		ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, scrollView)
+		
+		dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"})
+		
+		self.dataProvider = dataProvider;
+		self.dialog = dialog;
 	end
 	
-	self:updateButton();
+	--self:updateButton();
 end
 
 function addon:infoMessage(message)
-	print("|cFFE533E5[NeragoPetFood]|r "..tostring(message));
+	print("|cFFE533E5[Check Onyixa Cloak]|r "..tostring(message));
 end
 
 local events = CreateFrame("Frame");
@@ -137,4 +197,4 @@ events:RegisterEvent("ADDON_LOADED");
 events:RegisterEvent("GROUP_ROSTER_UPDATE");
 events:RegisterEvent("PLAYER_TARGET_CHANGED");
 events:RegisterEvent("INSPECT_READY");
-events:SetScript("OnEvent", function(...) self:onEvent(...));
+events:SetScript("OnEvent", function(...) addon:onEvent(...) end);
