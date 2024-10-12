@@ -1,10 +1,15 @@
 local addonName = select(1, ...)
 local addon = select(2, ...)
-
 NERAGO_ONY_CHECK = addon;
+
+local TEXTURE_UNKNOWN = "interface/icons/inv_misc_questionmark";
+local TEXTURE_YES = "interface/icons/inv_misc_cape_05";
+local TEXTURE_NO = "interface/icons/inv_misc_breadofthedead";
+local _nameIndex = 0;
 
 function addon:onEvent(_, event, ...)
 	local arg1, arg2 = select(1, ...), select(2, ...);
+	print("event="..event);
     if event == "ADDON_LOADED" then
         if arg1 == "NeragoCheckOnyCloak" then
             self:infoMessage("Loaded");
@@ -15,8 +20,9 @@ function addon:onEvent(_, event, ...)
 			end
 			self.loaded = true;
 			self.checking = false;
+			self.status = {};
         end
-	elseif self.loaded then
+	elseif self.loaded and self.checking then
 		if event == "GROUP_ROSTER_UPDATE" then
 			--todo
 		elseif event == "PLAYER_REGEN_DISABLED" then
@@ -33,9 +39,7 @@ function addon:onEvent(_, event, ...)
 end
 
 function addon:slashCommand(...)
-	self:createFrame();
-	--self:createButton00();
-	--self:startCheck();
+	self:startCheck();
 end
 
 function addon:listGroupMembers()
@@ -62,81 +66,98 @@ function addon:listGroupMembers()
 		local unitId = "player";
 		local name, guid = UnitNameUnmodified(unitId), UnitGUID(unitId);
 		tinsert(members, { guid = guid, name = name });
-		infoMessage("Not in group");
+		self:infoMessage("Not in group");
 	end
 	return members;
 end
 
 function addon:startCheck()
+	self.checking = true;
+	
+	self:createFrame();
+	
 	local members = self:listGroupMembers();
 	self.status = {};
-	self.dataProvider.RemoveIndexRange(1, self.dataProvider:GetSize());
+	self.dataProvider:RemoveIndexRange(1, self.dataProvider:GetSize());
 	for _, tab in ipairs(members) do
 		tab.cloak = "?";
 		self.status[tab.guid] = tab;
 		self.dataProvider:Insert(tab)
 	end
 	
+	self.dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="Neravi"})
 	
-	-- show UI
 end
-
--- TODO not in combat lockdown
 
 function addon:checkTarget()
 	local guid = UnitGUID("target");
-	if self.checking and self.status[guid] and CanInspect("target", false) then
+	if self.status[guid] and CanInspect("target", false) then
 		ClearInspectPlayer();
 		NotifyInspect("target");
 	end
 end
 
 function addon:inspectReady(inspecteeGUID)
-	local itemId = GetInventoryItemID("target", INVSLOT_BACK);
-	print("cloak "..tostring(itemId));
+	local guid = UnitGUID("target");
+	if inspecteeGUID == guid then
+		local tab = self.status[guid];
+		if tab then
+			local itemId = GetInventoryItemID("target", INVSLOT_BACK);
+			--print("cloak "..tostring(itemId));
+			if item == 15138 then
+				tab.cloak = "y"
+			else
+				tab.cloak = "n"
+			end
+			--function ScrollBoxListViewMixin:FindFrame(elementData)
+			--self:updateButton(tab);
+			self.scrollView:DataProviderContentsChanged()
+		end
+	end
 end
-
-local nameIndex = 0;
 
 function addon:initRow(frame, data)
 	if not frame.left then
-		local buttonName = "NeragoCheckOnyCloakCheckButton"..nameIndex;
-		nameIndex = nameIndex + 1
-		frame.button = CreateFrame("Button", buttonName, frame, "UIPanelButtonTemplate,InsecureActionButtonTemplate")
+		local buttonName = "NeragoCheckOnyCloakCheckButton".._nameIndex;
+		_nameIndex = _nameIndex + 1
+		frame.button = CreateFrame("Button", buttonName, frame, "InsecureActionButtonTemplate");
 		
-		frame.button:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-		frame.button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
-		frame.button:SetText("Check")
-		frame.button:SetSize(50, 20)
+		frame.button:SetPoint("TOPRIGHT", frame, "TOPRIGHT");
+		frame.button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT");
+		frame.button:SetText("Check");
+		frame.button:SetSize(20, 20);
 		
-		frame.button:SetScript("PostClick", function(_, button, down)
-			print(frame.button:GetAttribute("type") .. " " .. tostring(frame.button:GetAttribute("target")).. " " .. tostring(frame.button:GetAttribute("macrotext")))
-		end)
-		
-		frame.left = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText")
-		frame.left:SetPoint("LEFT", frame)
-		frame.left:SetPoint("RIGHT", frame.button, "LEFT")
-		
-		--frame.right = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText")
-		--frame.right:SetPoint("RIGHT")
+		frame.texure = frame.button:CreateTexture();
+		frame.texure:SetAllPoints(frame.button);
+		frame.texure:SetTexture(TEXTURE_UNKNOWN);
+				
+		frame.left = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText");
+		frame.left:SetPoint("LEFT", frame);
+		frame.left:SetPoint("RIGHT", frame.button, "LEFT");
 	end
 	
 	frame.left:SetText(data.name)
 	if not InCombatLockdown() then
 		frame.button:SetAttribute("type", "target");
         frame.button:SetAttribute("unit", data.name);
-		frame.button:Show()
-	else
-		frame.button:Hide()
+		self:updateButtonTexture(frame, data)
 	end
-	--frame.right:SetText("123")
-	--frame.right:Hide()
-	--frame.button:Show()
-	--frame:SetScript("OnMouseDown", function() self:pressPlayer(data) end)
 end
 
-function addon:pressPlayer(data)
-	
+function addon:updateButton(data)
+	local frame = self.scrollView:FindFrame(data);
+	self:updateButtonTexture(frame, data);
+	--self.scrollView:DataProviderContentsChanged()
+end
+
+function addon:updateButtonTexture(frame, data)
+	if data.cloak == "y" then
+		frame.texure:SetTexture(TEXTURE_YES);
+	elseif data.cloak == "n" then
+		frame.texure:SetTexture(TEXTURE_NO);
+	else
+		frame.texure:SetTexture(TEXTURE_UNKNOWN);
+	end
 end
 
 function addon:createFrame()
@@ -187,7 +208,7 @@ function addon:createFrame()
 		
 		local scrollBox = CreateFrame("Frame", nil, dialog, "WowScrollBoxList")
 		--scrollBox:SetAllPoints()
-		scrollBox:SetPoint("TOPLEFT", dialog.InsetBg, "TOPLEFT", 4, 0)
+		scrollBox:SetPoint("TOPLEFT", dialog.InsetBg, "TOPLEFT", 4, 6)
 		scrollBox:SetPoint("BOTTOMRIGHT", dialog.InsetBg, "BOTTOMRIGHT", -10, 0)
 
 		local scrollBar = CreateFrame("EventFrame", nil, dialog, "MinimalScrollBar")
@@ -198,18 +219,16 @@ function addon:createFrame()
 		-- dataProvider:SetSortComparator(function(a, b) if a.name < b.name then return -1 elseif a.name > b.name then return 1 else return 0 end end);
 		local scrollView = CreateScrollBoxListLinearView()
 		scrollView:SetDataProvider(dataProvider)
-		scrollView:SetElementExtent(20)
+		scrollView:SetElementExtent(26)
 		scrollView:SetElementInitializer("Frame", function(a, b) self:initRow(a, b) end)
 		ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, scrollView)
 		
-		-- dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="Neravi"})
-		dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="Neravi"})
-		
+		self.scrollView = scrollView;
 		self.dataProvider = dataProvider;
 		self.dialog = dialog;
+	else
+		dialog:Show();
 	end
-	
-	--self:updateButton();
 end
 
 function addon:infoMessage(message)
