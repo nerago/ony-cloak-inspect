@@ -9,7 +9,7 @@ local _nameIndex = 0;
 
 function addon:onEvent(_, event, ...)
 	local arg1, arg2 = select(1, ...), select(2, ...);
-	print("event="..event);
+	--print("event="..event);
     if event == "ADDON_LOADED" then
         if arg1 == "NeragoCheckOnyCloak" then
             self:infoMessage("Loaded");
@@ -39,7 +39,11 @@ function addon:onEvent(_, event, ...)
 end
 
 function addon:slashCommand(...)
-	self:startCheck();
+	if InCombatLockdown() then
+		self:infoMessage("Not available in combat");
+	else
+		self:startCheck();
+	end
 end
 
 function addon:listGroupMembers()
@@ -85,7 +89,7 @@ function addon:startCheck()
 		self.dataProvider:Insert(tab)
 	end
 	
-	self.dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="Neravi"})
+	self.dataProvider:Insert({name="Neraxo",guid="a"},{name="Average",guid="d"},{name="Gornek",guid="c"})
 	
 end
 
@@ -103,40 +107,58 @@ function addon:inspectReady(inspecteeGUID)
 		local tab = self.status[guid];
 		if tab then
 			local itemId = GetInventoryItemID("target", INVSLOT_BACK);
-			--print("cloak "..tostring(itemId));
-			if item == 15138 then
+			
+			if itemId == 15138 then
 				tab.cloak = "y"
 			else
 				tab.cloak = "n"
 			end
-			--function ScrollBoxListViewMixin:FindFrame(elementData)
-			--self:updateButton(tab);
-			self.scrollView:DataProviderContentsChanged()
+			
+			self.scrollView:SetDataProvider(self.dataProvider)
 		end
 	end
 end
 
 function addon:initRow(frame, data)
-	if not frame.left then
+	if not frame.button then
 		local buttonName = "NeragoCheckOnyCloakCheckButton".._nameIndex;
 		_nameIndex = _nameIndex + 1
-		frame.button = CreateFrame("Button", buttonName, frame, "InsecureActionButtonTemplate");
 		
-		frame.button:SetPoint("TOPRIGHT", frame, "TOPRIGHT");
-		frame.button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT");
-		frame.button:SetText("Check");
-		frame.button:SetSize(20, 20);
+		local borderFrame = CreateFrame("Frame", nil, frame, "BackdropTemplate");
+		borderFrame:SetSize(20, 20);
+		borderFrame:SetPoint("TOPLEFT", frame, 0, -2);
+		borderFrame:SetPoint("BOTTOMLEFT", frame, 0, 2);
 		
-		frame.texure = frame.button:CreateTexture();
-		frame.texure:SetAllPoints(frame.button);
-		frame.texure:SetTexture(TEXTURE_UNKNOWN);
+		borderFrame:SetBackdrop({
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			edgeSize = 16,
+			--insets = { left = 1, right = 1, top = 1, bottom = 1 },
+		});
+		borderFrame:SetBackdropColor(1, 1, 1, 0);
+		borderFrame:SetBackdropBorderColor(1, 0, 0, 0.5)
+		
+		local button = CreateFrame("Button", buttonName, borderFrame, "InsecureActionButtonTemplate");
+		button:SetPoint("TOPLEFT", borderFrame, 3, 3);
+		button:SetPoint("BOTTOMRIGHT", borderFrame, 3, 3);
+		
+		local buttonTexture = button:CreateTexture();
+		buttonTexture:SetAllPoints();
+		--buttonTexture:SetPoint("TOPLEFT", button, 0, 0);
+		--buttonTexture:SetPoint("BOTTOMRIGHT", button, 0, 0);
+		buttonTexture:SetTexture(TEXTURE_UNKNOWN);
+		buttonTexture:SetLayer("BACKGROUND");
+		buttonTexture:SetAlpha(0.2);
 				
-		frame.left = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText");
-		frame.left:SetPoint("LEFT", frame);
-		frame.left:SetPoint("RIGHT", frame.button, "LEFT");
+		local text = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText");
+		text:SetPoint("LEFT", borderFrame, "RIGHT", 6, 0);
+		text:SetPoint("RIGHT", frame, "RIGHT");
+		
+		frame.text = text;
+		frame.buttonTexure = buttonTexure;
+		frame.borderFrame = borderFrame;
 	end
 	
-	frame.left:SetText(data.name)
+	frame.text:SetText(data.name)
 	if not InCombatLockdown() then
 		frame.button:SetAttribute("type", "target");
         frame.button:SetAttribute("unit", data.name);
@@ -147,17 +169,17 @@ end
 function addon:updateButton(data)
 	local frame = self.scrollView:FindFrame(data);
 	self:updateButtonTexture(frame, data);
-	--self.scrollView:DataProviderContentsChanged()
 end
 
 function addon:updateButtonTexture(frame, data)
-	if data.cloak == "y" then
-		frame.texure:SetTexture(TEXTURE_YES);
-	elseif data.cloak == "n" then
-		frame.texure:SetTexture(TEXTURE_NO);
-	else
-		frame.texure:SetTexture(TEXTURE_UNKNOWN);
-	end
+	-- green/red borders?
+	--if data.cloak == "y" then
+	--	frame.buttonTexure:SetTexture(TEXTURE_YES);
+	--elseif data.cloak == "n" then
+	--	frame.buttonTexure:SetTexture(TEXTURE_NO);
+	--else
+	--	frame.buttonTexure:SetTexture(TEXTURE_UNKNOWN);
+	--end
 end
 
 function addon:createFrame()
@@ -204,11 +226,14 @@ function addon:createFrame()
 		dialog:RegisterForDrag("LeftButton");
 		dialog:EnableMouse(true)
 		dialog:SetMovable(true);
-		dialog:SetResizable(true)
+		dialog:SetResizable(true);
+		
+		dialog:SetScript("OnHide", function()
+			self.checking = false;
+		end);
 		
 		local scrollBox = CreateFrame("Frame", nil, dialog, "WowScrollBoxList")
-		--scrollBox:SetAllPoints()
-		scrollBox:SetPoint("TOPLEFT", dialog.InsetBg, "TOPLEFT", 4, 6)
+		scrollBox:SetPoint("TOPLEFT", dialog.InsetBg, "TOPLEFT", 8, -6)
 		scrollBox:SetPoint("BOTTOMRIGHT", dialog.InsetBg, "BOTTOMRIGHT", -10, 0)
 
 		local scrollBar = CreateFrame("EventFrame", nil, dialog, "MinimalScrollBar")
@@ -216,7 +241,7 @@ function addon:createFrame()
 		scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
 		
 		local dataProvider = CreateDataProvider()
-		-- dataProvider:SetSortComparator(function(a, b) if a.name < b.name then return -1 elseif a.name > b.name then return 1 else return 0 end end);
+		--dataProvider:SetSortComparator(function(a, b) if a.name < b.name then return -1 elseif a.name > b.name then return 1 else return 0 end end);
 		local scrollView = CreateScrollBoxListLinearView()
 		scrollView:SetDataProvider(dataProvider)
 		scrollView:SetElementExtent(26)
