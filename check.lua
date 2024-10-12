@@ -124,36 +124,45 @@ function addon:initRow(frame, data)
 		local buttonName = "NeragoCheckOnyCloakCheckButton".._nameIndex;
 		_nameIndex = _nameIndex + 1
 		
-		local borderFrame = CreateFrame("Frame", nil, frame, "BackdropTemplate");
-		borderFrame:SetSize(20, 20);
-		borderFrame:SetPoint("TOPLEFT", frame, 0, -2);
-		borderFrame:SetPoint("BOTTOMLEFT", frame, 0, 2);
+		
+		local button = CreateFrame("Button", buttonName, frame, "InsecureActionButtonTemplate");
+		button:SetPoint("TOPLEFT", frame, 0, -2);
+		button:SetPoint("BOTTOMLEFT", frame, 0, 2);
+		button:SetWidth(20);
+		
+		local buttonTexture = button:CreateTexture();
+		buttonTexture:SetAllPoints();
+		buttonTexture:SetTexture(TEXTURE_UNKNOWN);
+		----buttonTexture:SetPoint("TOPLEFT", button, 0, 0);
+		----buttonTexture:SetPoint("BOTTOMRIGHT", button, 0, 0);
+		--buttonTexture:SetLayer("BACKGROUND");
+		--buttonTexture:SetAlpha(0.2);
+		
+		
+		local borderFrame = CreateFrame("Frame", buttonName.."BACK", frame, "BackdropTemplate");
+		borderFrame:SetPoint("TOPLEFT", button, "TOPRIGHT", 0, 0);
+		borderFrame:SetPoint("BOTTOMLEFT", button, "BOTTOMRIGHT", 0, 0);
+		borderFrame:SetWidth(20);
+		--borderFrame:SetPoint("BOTTOMRIGHT", button, 0, 0);
+		--borderFrame:SetLayer("HIGHLIGHT");
 		
 		borderFrame:SetBackdrop({
 			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 			edgeSize = 16,
-			--insets = { left = 1, right = 1, top = 1, bottom = 1 },
+			insets = { left = 1, right = 1, top = 1, bottom = 1 },
 		});
-		borderFrame:SetBackdropColor(1, 1, 1, 0);
-		borderFrame:SetBackdropBorderColor(1, 0, 0, 0.5)
+		--borderFrame:SetBackdropColor(1, 1, 1, 0.7);
+		borderFrame:SetBackdropBorderColor(1, 0, 0, 0.7)
+		--
+		--
 		
-		local button = CreateFrame("Button", buttonName, borderFrame, "InsecureActionButtonTemplate");
-		button:SetPoint("TOPLEFT", borderFrame, 3, 3);
-		button:SetPoint("BOTTOMRIGHT", borderFrame, 3, 3);
-		
-		local buttonTexture = button:CreateTexture();
-		buttonTexture:SetAllPoints();
-		--buttonTexture:SetPoint("TOPLEFT", button, 0, 0);
-		--buttonTexture:SetPoint("BOTTOMRIGHT", button, 0, 0);
-		buttonTexture:SetTexture(TEXTURE_UNKNOWN);
-		buttonTexture:SetLayer("BACKGROUND");
-		buttonTexture:SetAlpha(0.2);
 				
 		local text = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText");
 		text:SetPoint("LEFT", borderFrame, "RIGHT", 6, 0);
 		text:SetPoint("RIGHT", frame, "RIGHT");
 		
 		frame.text = text;
+		frame.button = button;
 		frame.buttonTexure = buttonTexure;
 		frame.borderFrame = borderFrame;
 	end
