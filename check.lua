@@ -88,7 +88,7 @@ function addon:startCheck()
 		self.dataProvider:Insert(tab)
 	end
 	
-	self.dataProvider:Insert({name="Neraxo",guid="a"},{name="Average",guid="d"},{name="Gornek",guid="c"})
+	--self.dataProvider:Insert({name="Neraxo",guid="a"},{name="Average",guid="d"},{name="Gornek",guid="c"})
 	
 end
 
@@ -240,7 +240,11 @@ function addon:createFrame()
 		scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
 		
 		local dataProvider = CreateDataProvider()
-		--dataProvider:SetSortComparator(function(a, b) if a.name < b.name then return -1 elseif a.name > b.name then return 1 else return 0 end end);
+		dataProvider:SetSortComparator(function(a, b) 
+			if a and b and a.name and b.name then
+				return strcmputf8i(a.name, b.name) < 0;
+			end
+		end);
 		local scrollView = CreateScrollBoxListLinearView()
 		scrollView:SetDataProvider(dataProvider)
 		scrollView:SetElementExtent(26)
