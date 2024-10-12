@@ -4,12 +4,11 @@ NERAGO_ONY_CHECK = addon;
 
 local TEXTURE_UNKNOWN = "interface/icons/inv_misc_questionmark";
 local TEXTURE_YES = "interface/icons/inv_misc_cape_05";
-local TEXTURE_NO = "interface/icons/inv_misc_breadofthedead";
+local TEXTURE_NO = "interface/icons/inv_misc_bone_humanskull_01";
 local _nameIndex = 0;
 
 function addon:onEvent(_, event, ...)
 	local arg1, arg2 = select(1, ...), select(2, ...);
-	--print("event="..event);
     if event == "ADDON_LOADED" then
         if arg1 == "NeragoCheckOnyCloak" then
             self:infoMessage("Loaded");
@@ -124,28 +123,27 @@ function addon:initRow(frame, data)
 		local buttonName = "NeragoCheckOnyCloakCheckButton".._nameIndex;
 		_nameIndex = _nameIndex + 1
 		
-		
 		local button = CreateFrame("Button", buttonName, frame, "InsecureActionButtonTemplate");
 		button:SetPoint("TOPLEFT", frame, 0, -2);
 		button:SetPoint("BOTTOMLEFT", frame, 0, 2);
-		button:SetWidth(20);
+		button:SetWidth(22);
 		
 		local buttonTexture = button:CreateTexture();
 		buttonTexture:SetTexture(TEXTURE_UNKNOWN);
 		buttonTexture:SetPoint("TOPLEFT", button, 3, -3);
 		buttonTexture:SetPoint("BOTTOMRIGHT", button, -3, 3);
-		buttonTexture:SetDrawLayer("BACKGROUND");
 		
 		local borderFrame = CreateFrame("Frame", buttonName.."BACK", frame, "BackdropTemplate");
-		borderFrame:SetPoint("TOPLEFT", button, "TOPLEFT", -2, 2);
-		borderFrame:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, -2);
+		borderFrame:SetPoint("TOPLEFT", button, "TOPLEFT", -4, 4);
+		borderFrame:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 4, -4);
 		borderFrame:SetWidth(20);
 		borderFrame:SetBackdrop({
-			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			edgeFile = "Interface\\TutorialFrame\\UI-TutorialFrame-CalloutGlow",
 			edgeSize = 16,
+			tileEdge = true,
+			tileSize = 16,
 		});
-		borderFrame:SetBackdropBorderColor(1, 0, 0, 1)
-		borderFrame:SetDrawLayer("BORDER", 6);
+		borderFrame:SetBackdropBorderColor(0, 0, 0, 0)
 				
 		local text = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText");
 		text:SetPoint("LEFT", borderFrame, "RIGHT", 6, 0);
@@ -153,7 +151,7 @@ function addon:initRow(frame, data)
 		
 		frame.text = text;
 		frame.button = button;
-		frame.buttonTexure = buttonTexure;
+		frame.buttonTexture = buttonTexture;
 		frame.borderFrame = borderFrame;
 	end
 	
@@ -171,13 +169,15 @@ function addon:updateButton(data)
 end
 
 function addon:updateButtonTexture(frame, data)
-	-- green/red borders?
 	if data.cloak == "y" then
-		frame.buttonTexure:SetTexture(TEXTURE_YES);
+		frame.buttonTexture:SetTexture(TEXTURE_YES);
+		frame.borderFrame:SetBackdropBorderColor(0, 1, 0, 1);
 	elseif data.cloak == "n" then
-		frame.buttonTexure:SetTexture(TEXTURE_NO);
+		frame.buttonTexture:SetTexture(TEXTURE_NO);
+		frame.borderFrame:SetBackdropBorderColor(1, 0, 0, 1);
 	else
-		frame.buttonTexure:SetTexture(TEXTURE_UNKNOWN);
+		frame.buttonTexture:SetTexture(TEXTURE_UNKNOWN);
+		frame.borderFrame:SetBackdropBorderColor(0, 0, 0, 0);
 	end
 end
 
