@@ -33,8 +33,8 @@ function addon:onEvent(_, event, ...)
 end
 
 function addon:slashCommand(...)
-	--self:createFrame();
-	self:createButton00();
+	self:createFrame();
+	--self:createButton00();
 	--self:startCheck();
 end
 
@@ -102,8 +102,7 @@ function addon:initRow(frame, data)
 	if not frame.left then
 		local buttonName = "NeragoCheckOnyCloakCheckButton"..nameIndex;
 		nameIndex = nameIndex + 1
-		--frame.button = CreateFrame("Button", buttonName, frame, "InsecureActionButtonTemplate,UIPanelButtonTemplate")
-		frame.button = CreateFrame("Button", buttonName, UIParent, "InsecureActionButtonTemplate,UIPanelButtonTemplate")
+		frame.button = CreateFrame("Button", buttonName, frame, "UIPanelButtonTemplate,InsecureActionButtonTemplate")
 		
 		frame.button:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 		frame.button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
@@ -111,7 +110,7 @@ function addon:initRow(frame, data)
 		frame.button:SetSize(50, 20)
 		
 		frame.button:SetScript("PostClick", function(_, button, down)
-			print(frame.button:GetAttribute("type") .. " " .. frame.button:GetAttribute("target"))
+			print(frame.button:GetAttribute("type") .. " " .. tostring(frame.button:GetAttribute("target")).. " " .. tostring(frame.button:GetAttribute("macrotext")))
 		end)
 		
 		frame.left = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText")
@@ -124,10 +123,8 @@ function addon:initRow(frame, data)
 	
 	frame.left:SetText(data.name)
 	if not InCombatLockdown() then
-		frame.button:SetAttribute("type", "target")
-		frame.button:SetAttribute("target", data.name)
-		--btn:SetAttribute("type", "macro")
-        --btn:SetAttribute("macrotext", "/target Neravi")
+		frame.button:SetAttribute("type", "target");
+        frame.button:SetAttribute("unit", data.name);
 		frame.button:Show()
 	else
 		frame.button:Hide()
@@ -206,42 +203,13 @@ function addon:createFrame()
 		ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, scrollView)
 		
 		-- dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="Neravi"})
-		dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="player"})
+		dataProvider:Insert({name="Nerago"},{name="Average"},{name="Gornek"},{name="Neravi"})
 		
 		self.dataProvider = dataProvider;
 		self.dialog = dialog;
 	end
 	
 	--self:updateButton();
-end
-
-function addon:createButton00()
-	local btn = self.button;
-	if not btn then
-		btn = CreateFrame("Button", "NeragoOnyCheekButton", UIParent, "SecureActionButtonTemplate")
-		btn:SetSize(50, 50);
-		btn:SetAttribute("type", "target");
-		btn:SetAttribute("target", "Neravi")
-		--btn:SetAttribute("type", "macro")
-        --btn:SetAttribute("macrotext", "/target Neravi")
-		
-		btn:SetPoint("CENTER");
-		
-		btn.tex = btn:CreateTexture()
-		btn.tex:SetAllPoints(btn)
-		btn.tex:SetTexture("interface/icons/inv_misc_questionmark")
-		
-		btn:RegisterForClicks("AnyDown");
-		btn:SetScript("PostClick", function(_, button, down)
-			self:infoMessage("feed");
-		end)
-			
-		btn:SetMovable(true);
-		btn:RegisterForDrag("RightButton");
-		
-		self.button = btn;
-	end
-	
 end
 
 function addon:infoMessage(message)
