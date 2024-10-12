@@ -131,31 +131,21 @@ function addon:initRow(frame, data)
 		button:SetWidth(20);
 		
 		local buttonTexture = button:CreateTexture();
-		buttonTexture:SetAllPoints();
 		buttonTexture:SetTexture(TEXTURE_UNKNOWN);
-		----buttonTexture:SetPoint("TOPLEFT", button, 0, 0);
-		----buttonTexture:SetPoint("BOTTOMRIGHT", button, 0, 0);
-		--buttonTexture:SetLayer("BACKGROUND");
-		--buttonTexture:SetAlpha(0.2);
-		
+		buttonTexture:SetPoint("TOPLEFT", button, 3, -3);
+		buttonTexture:SetPoint("BOTTOMRIGHT", button, -3, 3);
+		buttonTexture:SetDrawLayer("BACKGROUND");
 		
 		local borderFrame = CreateFrame("Frame", buttonName.."BACK", frame, "BackdropTemplate");
-		borderFrame:SetPoint("TOPLEFT", button, "TOPRIGHT", 0, 0);
-		borderFrame:SetPoint("BOTTOMLEFT", button, "BOTTOMRIGHT", 0, 0);
+		borderFrame:SetPoint("TOPLEFT", button, "TOPLEFT", -2, 2);
+		borderFrame:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, -2);
 		borderFrame:SetWidth(20);
-		--borderFrame:SetPoint("BOTTOMRIGHT", button, 0, 0);
-		--borderFrame:SetLayer("HIGHLIGHT");
-		
 		borderFrame:SetBackdrop({
 			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 			edgeSize = 16,
-			insets = { left = 1, right = 1, top = 1, bottom = 1 },
 		});
-		--borderFrame:SetBackdropColor(1, 1, 1, 0.7);
-		borderFrame:SetBackdropBorderColor(1, 0, 0, 0.7)
-		--
-		--
-		
+		borderFrame:SetBackdropBorderColor(1, 0, 0, 1)
+		borderFrame:SetDrawLayer("BORDER", 6);
 				
 		local text = frame:CreateFontString(nil, "OVERLAY", "GameTooltipText");
 		text:SetPoint("LEFT", borderFrame, "RIGHT", 6, 0);
@@ -182,13 +172,13 @@ end
 
 function addon:updateButtonTexture(frame, data)
 	-- green/red borders?
-	--if data.cloak == "y" then
-	--	frame.buttonTexure:SetTexture(TEXTURE_YES);
-	--elseif data.cloak == "n" then
-	--	frame.buttonTexure:SetTexture(TEXTURE_NO);
-	--else
-	--	frame.buttonTexure:SetTexture(TEXTURE_UNKNOWN);
-	--end
+	if data.cloak == "y" then
+		frame.buttonTexure:SetTexture(TEXTURE_YES);
+	elseif data.cloak == "n" then
+		frame.buttonTexure:SetTexture(TEXTURE_NO);
+	else
+		frame.buttonTexure:SetTexture(TEXTURE_UNKNOWN);
+	end
 end
 
 function addon:createFrame()
