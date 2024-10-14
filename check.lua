@@ -23,7 +23,7 @@ function addon:onEvent(_, event, ...)
         end
 	elseif self.loaded and self.checking then
 		if event == "GROUP_ROSTER_UPDATE" then
-			--todo
+			self:updateRoster();
 		elseif event == "PLAYER_REGEN_DISABLED" then
 			self.checking = false;
 			if self.dialog then
@@ -47,14 +47,12 @@ end
 
 function addon:listGroupMembers()
 	local members = {};
-	
 	if IsInRaid() then
 		for i = 1, MAX_RAID_MEMBERS do
-			-- GetRaidRosterInfo would get us tank status too
 			local unitId = "raid" .. i;
 			local name, guid = UnitNameUnmodified(unitId), UnitGUID(unitId);
 			if name and guid then
-				tinsert(members, { guid = guid, name = name });
+				members[guid] = { guid = guid, name = name };
 			end
 		end
 	elseif IsInGroup() then
@@ -62,14 +60,13 @@ function addon:listGroupMembers()
 			local unitId = "party" .. i;
 			local name, guid = UnitNameUnmodified(unitId), UnitGUID(unitId);
 			if name and guid then
-				tinsert(members, { guid = guid, name = name });
+				members[guid] = { guid = guid, name = name };
 			end
 		end
 	else
 		local unitId = "player";
 		local name, guid = UnitNameUnmodified(unitId), UnitGUID(unitId);
-		tinsert(members, { guid = guid, name = name });
-		self:infoMessage("Not in group");
+		members[guid] = { guid = guid, name = name };
 	end
 	return members;
 end
@@ -82,14 +79,36 @@ function addon:startCheck()
 	local members = self:listGroupMembers();
 	self.status = {};
 	self.dataProvider:RemoveIndexRange(1, self.dataProvider:GetSize());
-	for _, tab in ipairs(members) do
-		tab.cloak = "?";
-		self.status[tab.guid] = tab;
-		self.dataProvider:Insert(tab)
+	for _, tab in pairs(members) do
+		if tab then
+			tab.cloak = "?";
+			self.status[tab.guid] = tab;
+			self.dataProvider:Insert(tab)
+		end
+	end
+end
+
+function addon:updateRoster(inspecteeGUID)
+	local members = self:listGroupMembers();
+	
+	-- remove old
+	for guid, tab in pairs(self.status) do
+		if tab and not members[guid] then
+			self.status[guid] = nil
+			self.dataProvider:Remove(tab)
+		end
 	end
 	
-	--self.dataProvider:Insert({name="Neraxo",guid="a"},{name="Average",guid="d"},{name="Gornek",guid="c"})
+	-- add new
+	for _, tab in pairs(members) do
+		if not self.status[tab.guid] then
+			tab.cloak = "?";
+			self.status[tab.guid] = tab;
+			self.dataProvider:Insert(tab)
+		end
+	end
 	
+	self.scrollView:SetDataProvider(self.dataProvider)
 end
 
 function addon:checkTarget()
@@ -185,7 +204,7 @@ function addon:createFrame()
 	local dialog = self.dialog;
 	if not dialog then
 		dialog = CreateFrame("Frame", "NeragoCheckOnyFrame", UIParent, "BasicFrameTemplateWithInset");
-		dialog.TitleText:SetText("Check Onyixa Cloak")
+		dialog.TitleText:SetText("Check Onyxia Cloak")
 		dialog:SetSize(200, 400); -- todo saved size
 		
 		local saved = NERAGO_ONY_CHECK_SAVED;
