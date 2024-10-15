@@ -1,7 +1,0 @@
-## Interface: 11302
-## Title: Nerago's Check Onyixa Cloak
-## Author: Nerago
-## Version: 0.0.1
-## SavedVariablesPerCharacter: NERAGO_ONY_CHECK_SAVED
-
-check.lua

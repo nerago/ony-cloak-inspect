@@ -1,21 +1,22 @@
 local addonName = select(1, ...)
 local addon = select(2, ...)
-NERAGO_ONY_CHECK = addon;
+ONY_CLOAK_INSPECT = addon;
 
 local TEXTURE_UNKNOWN = "interface/icons/inv_misc_questionmark";
 local TEXTURE_YES = "interface/icons/inv_misc_cape_05";
 local TEXTURE_NO = "interface/icons/inv_misc_bone_humanskull_01";
+local ONY_CLOAK_ID = 15138;
 local _nameIndex = 0;
 
 function addon:onEvent(_, event, ...)
 	local arg1, arg2 = select(1, ...), select(2, ...);
     if event == "ADDON_LOADED" then
-        if arg1 == "NeragoCheckOnyCloak" then
+        if arg1 == "OnyCloakInspect" then
             self:infoMessage("Loaded");
-			SlashCmdList["NERAGO_ONY_CHECK"] = function(...) self:slashCommand(...) end;
-			SLASH_NERAGO_ONY_CHECK1 = "/ony";
-			if not NERAGO_ONY_CHECK_SAVED then
-				NERAGO_ONY_CHECK_SAVED = {};
+			SlashCmdList["ONY_CLOAK_INSPECT"] = function(...) self:slashCommand(...) end;
+			SLASH_ONY_CLOAK_INSPECT1 = "/ony";
+			if not ONY_CLOAK_INSPECT_SAVED then
+				ONY_CLOAK_INSPECT_SAVED = {};
 			end
 			self.loaded = true;
 			self.checking = false;
@@ -126,7 +127,7 @@ function addon:inspectReady(inspecteeGUID)
 		if tab then
 			local itemId = GetInventoryItemID("target", INVSLOT_BACK);
 			
-			if itemId == 15138 then
+			if itemId == ONY_CLOAK_ID then
 				tab.cloak = "y"
 			else
 				tab.cloak = "n"
@@ -139,7 +140,7 @@ end
 
 function addon:initRow(frame, data)
 	if not frame.button then
-		local buttonName = "NeragoCheckOnyCloakCheckButton".._nameIndex;
+		local buttonName = "OnyCloakInspectButton".._nameIndex;
 		_nameIndex = _nameIndex + 1
 		
 		local button = CreateFrame("Button", buttonName, frame, "InsecureActionButtonTemplate");
@@ -203,15 +204,20 @@ end
 function addon:createFrame()
 	local dialog = self.dialog;
 	if not dialog then
-		dialog = CreateFrame("Frame", "NeragoCheckOnyFrame", UIParent, "BasicFrameTemplateWithInset");
-		dialog.TitleText:SetText("Check Onyxia Cloak")
-		dialog:SetSize(200, 400); -- todo saved size
+		dialog = CreateFrame("Frame", "OnyCloakInspectFrame", UIParent, "BasicFrameTemplateWithInset");
+		dialog.TitleText:SetText("Onyxia Cloak Inspector")
 		
-		local saved = NERAGO_ONY_CHECK_SAVED;
+		
+		local saved = ONY_CLOAK_INSPECT_SAVED;
 		if saved and saved.point ~= nil and saved.relativePoint ~= nil and saved.offsetX ~= nil and saved.offsetY ~= nil then
 			dialog:SetPoint(saved.point, nil, saved.relativePoint, saved.offsetX, saved.offsetY);
 		else
 			dialog:SetPoint("CENTER");
+		end
+		if saved and saved.width ~= nil and saved.height ~= nil then
+			dialog:SetSize(saved.width, saved.height);
+		else
+			dialog:SetSize(200, 400);
 		end
 		
 		dialog:SetScript("OnDragStart", function(_, button)
@@ -235,10 +241,13 @@ function addon:createFrame()
 		sizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight");
 		sizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up");
 		sizer:SetScript("OnMouseDown", function(self)
-			dialog:StartSizing("BOTTOMRIGHT") 
+			dialog:StartSizing("BOTTOMRIGHT");
 		end)
 		sizer:SetScript("OnMouseUp", function()
-			dialog:StopMovingOrSizing("BOTTOMRIGHT")
+			dialog:StopMovingOrSizing("BOTTOMRIGHT");
+			local width, height = dialog:GetSize();
+			saved.width = width
+			saved.height = height
 		end)
 		
 		dialog:RegisterForDrag("LeftButton");
@@ -274,17 +283,19 @@ function addon:createFrame()
 		self.dataProvider = dataProvider;
 		self.dialog = dialog;
 	else
+		self.scrollView:SetDataProvider(self.dataProvider)
 		dialog:Show();
 	end
 end
 
 function addon:infoMessage(message)
-	print("|cFFE533E5[Check Onyixa Cloak]|r "..tostring(message));
+	print("|cFFE533E5[Onyxia Cloak Inspector]|r "..tostring(message));
 end
 
 local events = CreateFrame("Frame");
 events:RegisterEvent("ADDON_LOADED");
 events:RegisterEvent("PLAYER_REGEN_DISABLED");
+events:RegisterEvent("GROUP_ROSTER_UPDATE");
 events:RegisterEvent("PLAYER_TARGET_CHANGED");
 events:RegisterEvent("INSPECT_READY");
 events:SetScript("OnEvent", function(...) addon:onEvent(...) end);

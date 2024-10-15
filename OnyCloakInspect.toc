@@ -1,0 +1,7 @@
+## Interface: 11504
+## Title: Onyxia Cloak Inspector
+## Author: Nerago
+## Version: 0.1
+## SavedVariablesPerCharacter: ONY_CLOAK_INSPECT_SAVED
+
+check.lua
