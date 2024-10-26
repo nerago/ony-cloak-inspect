@@ -6,6 +6,7 @@ local TEXTURE_UNKNOWN = "interface/icons/inv_misc_questionmark";
 local TEXTURE_YES = "interface/icons/inv_misc_cape_05";
 local TEXTURE_NO = "interface/icons/inv_misc_bone_humanskull_01";
 local ONY_CLOAK_ID = 15138;
+local DRAGON_SHIELD_ID = 224280;
 local _nameIndex = 0;
 
 function addon:onEvent(_, event, ...)
@@ -120,14 +121,18 @@ function addon:checkTarget()
 	end
 end
 
+function addon:targetHasCloak()
+	local backId = GetInventoryItemID("target", INVSLOT_BACK);
+	local offId = GetInventoryItemID("target", INVSLOT_OFFHAND);
+	return backId == ONY_CLOAK_ID or offId == DRAGON_SHIELD_ID;
+end
+
 function addon:inspectReady(inspecteeGUID)
 	local guid = UnitGUID("target");
 	if inspecteeGUID == guid then
 		local tab = self.status[guid];
 		if tab then
-			local itemId = GetInventoryItemID("target", INVSLOT_BACK);
-			
-			if itemId == ONY_CLOAK_ID then
+			if self:targetHasCloak() then
 				tab.cloak = "y"
 			else
 				tab.cloak = "n"
